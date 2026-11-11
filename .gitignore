@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C environments
+.venv/
+venv/
+env/
+ENV/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Big Data raw inputs & checkpoints (Do NOT commit huge datasets to Git)
+data/raw/*
+!data/raw/.gitkeep
+data/refined/
+data/partitioned/
+checkpoints/
+*.parquet/
+*.snappy.parquet
+*.db
+*.sqlite
+*.sqlite3
+
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and runtime databases
+*.log
+postgres_data/
+zookeeper_data/
+kafka_data/
+hadoop_namenode/
+hadoop_datanode/
+

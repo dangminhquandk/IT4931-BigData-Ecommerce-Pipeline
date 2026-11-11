@@ -1,0 +1,3 @@
+# Raw datasets such as orders_1m.csv should be placed in this directory.
+# This directory is ignored by Git to avoid uploading large binary/CSV files.
+

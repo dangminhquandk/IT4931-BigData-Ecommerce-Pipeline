@@ -1,0 +1,148 @@
+services:
+  # ==========================================
+  # 1. TẦNG ĐIỀU PHỐI & NHẬN LUỒNG (INGESTION)
+  # ==========================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - bigdata-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - bigdata-net
+
+  init-kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: init-kafka
+    depends_on:
+      - kafka
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: |
+      # Chờ Kafka broker khởi động hoàn tất
+      cub kafka-ready -b kafka:9092 1 40
+      echo 'Tạo topic clickstream-events (3 partitions, replication-factor 1)...'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic clickstream-events --partitions 3 --replication-factor 1
+      echo 'Danh sách topics hiện có:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+    networks:
+      - bigdata-net
+
+  # ==========================================
+  # 2. TẦNG LƯU TRỮ PHÂN TÁN HDFS (STORAGE)
+  # ==========================================
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: namenode
+    restart: always
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=ecommerce-cluster
+    env_file:
+      - ./config/hadoop/hadoop.env
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./data:/data
+    networks:
+      - bigdata-net
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: datanode
+    restart: always
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864"
+    env_file:
+      - ./config/hadoop/hadoop.env
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    networks:
+      - bigdata-net
+
+  # ==========================================
+  # 3. TẦNG XỬ LÝ DỮ LIỆU PHÂN TÁN (SPARK)
+  # ==========================================
+  spark-master:
+    image: apache/spark:3.5.0
+    container_name: bigdata-spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h 0.0.0.0
+    ports:
+      - "7077:7077"
+      - "8082:8080"
+    volumes:
+      - ./jobs:/opt/spark/jobs
+      - ./data:/opt/spark/data
+      - ./benchmark:/opt/spark/benchmark
+    networks:
+      - bigdata-net
+
+  spark-worker:
+    image: apache/spark:3.5.0
+    container_name: bigdata-spark-worker
+    depends_on:
+      - spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./jobs:/opt/spark/jobs
+      - ./data:/opt/spark/data
+      - ./benchmark:/opt/spark/benchmark
+    networks:
+      - bigdata-net
+
+  # ==========================================
+  # 4. TẦNG PHỤC VỤ (SERVING DATABASE)
+  # ==========================================
+  postgres:
+    image: postgres:16
+    container_name: postgres-serving
+    restart: always
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: ecommerce_serving
+    volumes:
+      - postgres_serving_data:/var/lib/postgresql/data
+      - ./scripts/init_serving_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - bigdata-net
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  postgres_serving_data:
+
+networks:
+  bigdata-net:
+    driver: bridge
+

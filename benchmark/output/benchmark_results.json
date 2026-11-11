@@ -1,0 +1,65 @@
+[
+  {
+    "test_case": "TC1: Partition Pruning (Lọc theo year=2019 & month=10)",
+    "csv": {
+      "duration_ms": 1014.7,
+      "row_count": 1000000,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "parquet": {
+      "duration_ms": 358.98,
+      "row_count": 1000000,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "partitioned": {
+      "duration_ms": 190.99,
+      "row_count": 1000000,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    }
+  },
+  {
+    "test_case": "TC2: Predicate Pushdown (Category LIKE 'electronics%' & Price > 500)",
+    "csv": {
+      "duration_ms": 510.38,
+      "row_count": 111061,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "parquet": {
+      "duration_ms": 275.39,
+      "row_count": 111061,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "partitioned": {
+      "duration_ms": 255.77,
+      "row_count": 111061,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    }
+  },
+  {
+    "test_case": "TC3: Heavy Aggregation (Group By Category, Sum/Avg, Sort)",
+    "csv": {
+      "duration_ms": 654.43,
+      "row_count": 124,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "parquet": {
+      "duration_ms": 324.17,
+      "row_count": 124,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    },
+    "partitioned": {
+      "duration_ms": 292.91,
+      "row_count": 124,
+      "ram_mb": 0.0,
+      "cpu_percent": 0.0
+    }
+  }
+]
